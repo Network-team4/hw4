@@ -119,9 +119,6 @@ void write_routine(int sock, char *buf)//, FILE *fp)
 		fclose(fp);
 		//close(sock);
          }//else if put
-	 else if(!strcmp(buf, "get") ){
-		printf("get부분은 여기에 코딩 \n");
-	 }	
 	else{
 		printf("else \n");
 	}
