@@ -7,8 +7,8 @@
 
 #define BUF_SIZE 30
 void error_handling(char *message);
-void read_routine(int sock, char *buf);
-void write_routine(int sock, char *buf, FILE *fp);
+//void read_routine(int sock, char *buf);
+void write_routine(int sock, char *buf);//, FILE *fp);
 
 int main(int argc, char *argv[])
 {
@@ -30,50 +30,41 @@ int main(int argc, char *argv[])
 
     if(connect(sock, (struct sockaddr*)&serv_adr, sizeof(serv_adr))==-1)
         error_handling("connect() error!");
-    //프로세스의 복사본 생성
-    pid=fork();
-    //자식 프로세스
-    if(pid==0)
-        write_routine(sock, buf, fp);
-    else //부모 프로세스
-        read_routine(sock, buf);
+  
+	write_routine(sock, buf);
+   
 
     close(sock);
     return 0;
 }
 
-void read_routine(int sock, char *buf)
+void write_routine(int sock, char *buf)//, FILE *fp)
 {
-    while(1)
-    {
-        int str_len=read(sock, buf, BUF_SIZE);
-        if(str_len==0)
-            return;
 
-        buf[str_len]=0;
-        printf("Message from server: %s", buf);
-    }
-}
-void write_routine(int sock, char *buf, FILE *fp)
-{
-    char END[129] = "end";
     int i, numRead;
     int retcode;
     int totalbytes;//file size
-    char fileName[129];
-    int fNameIndex = 0;
+    char t_msg[129];
+    char last_msg[129];
+
+
+	int sumRead = 0;
     while(1)
     {
+        char fileName[129];
+        int fNameIndex = 0;
+	FILE *fp;
+	printf("while start \n");
 	scanf("%s", buf);
-        if(!strcmp(buf,"q\n") || !strcmp(buf,"Q\n"))
+        if(!strcmp(buf,"q") || !strcmp(buf,"Q"))
         {
-            shutdown(sock, SHUT_WR);
-            return;
+            //shutdown(sock, SHUT_WR);
+            break;
         }//if
         else if(!strcmp(buf, "put") )
         {
 		scanf("%s", buf);
-
+		
                 //file name
                 for(i=0;i<strlen(buf);i++){
                      if(buf[i] == '[' || buf[i] == ']')
@@ -102,31 +93,26 @@ void write_routine(int sock, char *buf, FILE *fp)
 		//write 2 file_size
                  write(sock, &totalbytes, sizeof(int));
                  rewind(fp);
-                 //send data to server
-                 while(1){
-                            numRead = fread(fileName,1,128,fp);
-                            if(numRead > 0){
-                                //send packet to server
-                                //write 3 send file
-                    		write(sock, fileName, numRead);
-                                //usleep(1000);
-                                if(retcode <= -1){
-
-                                }
-                            }
-                            else{
-				write(sock, END, 4);
-				printf("%s \n", END);
-				printf("numRead : %d \n", numRead);
-				printf("break \n");
-                                break;
-			    }
-                 }//send while
-	 fclose(fp);
+                 //send data to server		
+		//write 3 file transfer
+		while(1){
+			numRead = fread(t_msg,1,128,fp);
+			printf("numRead : %d \n", numRead);
+			if(numRead < 128){
+				write(sock, t_msg, numRead);
+				break;
+			}
+			usleep(1000);
+			write(sock, t_msg, 128);
+		}
+		shutdown(sock, SHUT_WR);
+		//fclose(fp);
+		//close(sock);
          }//else if put
          //기존
         // write(sock, buf, strlen(buf));
     }//while
+    close(sock);
 	
 }
 void error_handling(char *message)

@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
 		if(pid==0)//here to code
 		{
 			close(serv_sock);
-			
+
 			//read 1 file_name
 			str_len=read(clnt_sock, buf, 128);
 			for(i=0;i<str_len;i++){
@@ -75,19 +75,18 @@ int main(int argc, char *argv[])
 			read(clnt_sock, &buf, sizeof(int));
 			printf("file size : %s \n", buf);
 			fp = fopen(fileName,"wb");
-
+			int cnt = 0;
+			int summ = 0;
 			//read 3 transfer file
-			while(1){
-				str_len = read(clnt_sock, buf, 128);
-				if(strcmp("end",buf) == 0) {
-					printf("end \n");
-					break;
-				}
-				fwrite(buf,1,str_len,fp);
-			}
+			while( (str_len = read(clnt_sock, buf, 128)) != 0){
+				fwrite((void*)buf, 1, str_len, fp);
+				printf("str_len : %d \n", str_len);
+			}			
+			
 			printf("finish \n");
 			fclose(fp);
-			puts("client disconnected...");
+			printf("client disconnected... \n");
+			//puts("client disconnected...");
 		}
 		else
 			close(clnt_sock);
