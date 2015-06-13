@@ -5,14 +5,14 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 
-#define BUF_SIZE 30
+#define BUF_SIZE 128
 void error_handling(char *message);
 //void read_routine(int sock, char *buf);
 void write_routine(int sock, char *buf);//, FILE *fp);
 
 int main(int argc, char *argv[])
 {
-    FILE *fp;
+    //FILE *fp;
     int sock;
     pid_t pid;
     char buf[BUF_SIZE];
@@ -51,11 +51,17 @@ void write_routine(int sock, char *buf)//, FILE *fp)
 	int sumRead = 0;
     while(1)
     {
+	int len = 0;
         char fileName[129];
         int fNameIndex = 0;
 	FILE *fp;
 	printf("while start \n");
 	scanf("%s", buf);
+
+	//write 0 put or get
+       	write(sock, buf, strlen(buf)+1);
+
+	//printf("%d \n", buf);
         if(!strcmp(buf,"q") || !strcmp(buf,"Q"))
         {
             //shutdown(sock, SHUT_WR);
@@ -63,7 +69,10 @@ void write_routine(int sock, char *buf)//, FILE *fp)
         }//if
         else if(!strcmp(buf, "put") )
         {
+
+
 		scanf("%s", buf);
+		printf("%s \n", buf);
 		
                 //file name
                 for(i=0;i<strlen(buf);i++){
@@ -74,9 +83,10 @@ void write_routine(int sock, char *buf)//, FILE *fp)
 		
 	         fileName[fNameIndex++] = '\0';
         	 printf("%s \n", fileName);
-	         
+
 		//write 1 file name
-        	 write(sock, fileName, 128);
+        	 write(sock, fileName, strlen(fileName)+1 );
+		printf("%s \n", fileName);
 	         
 		 //file I/O
         	 fp = fopen(fileName,"rb");
@@ -102,13 +112,16 @@ void write_routine(int sock, char *buf)//, FILE *fp)
 				write(sock, t_msg, numRead);
 				break;
 			}
-			usleep(1000);
+			usleep(100);
 			write(sock, t_msg, 128);
 		}
-		shutdown(sock, SHUT_WR);
-		//fclose(fp);
+		//shutdown(sock, SHUT_WR);
+		fclose(fp);
 		//close(sock);
          }//else if put
+	else{
+		printf("else \n");
+	}
          //기존
         // write(sock, buf, strlen(buf));
     }//while
