@@ -7,16 +7,14 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 
-
-int BUF_SIZE = 128;
-
+#define BUF_SIZE 30
 void error_handling(char *message);
 void read_childproc(int sig);
 
 int main(int argc, char *argv[])
 {
-        int vRecv=0;
-	char fileName[129];
+    int totalbytes;//file size
+	char fileName[128];
 	int i;
 	int serv_sock, clnt_sock;
 	struct sockaddr_in serv_adr, clnt_adr;
@@ -72,8 +70,6 @@ int main(int argc, char *argv[])
 			//read 0 put or get
 			while( (str_len = read(clnt_sock, buf, 128)) != 0)
 			{
-				int numTotal=0;
-				int totalbytes;//file size
 				FILE *fp;
 //				char buf[129];
 				printf("server while start \n");
@@ -99,7 +95,7 @@ int main(int argc, char *argv[])
 					int summ = 0;
 					//read 3 transfer file
 					do{
-						str_len = read(clnt_sock,buf,BUF_SIZE);
+						str_len = read(clnt_sock,buf,128);
 						fwrite((void*)buf, 1, str_len, fp);
 						printf("str_len : %d \n", str_len);
        						//nread = recvfrom(sockid,fileName,512000,0, (struct sockaddr *) &client_addr, (socklen_t*) &addrlen);
@@ -107,7 +103,7 @@ int main(int argc, char *argv[])
 					        numTotal += str_len;
 					        // printf("nread : %d \n",nread);
 					         printf("numtotal : %d \n",numTotal);
-					}while((str_len == BUF_SIZE) && (numTotal != totalbytes));
+					}while((str_len == 128) && (numTotal != totalbytes));
 
 					/*
 					while( (str_len = read(clnt_sock, buf, 128)) != 0 ){
@@ -120,22 +116,17 @@ int main(int argc, char *argv[])
 					printf("finish \n");
 					//scanf("%s \n", buf);
 					//close(clnt_sock);
-				}//put
+				}//if
 				else if( !strcmp("get", buf) ){
 					printf("get은 여기다 코딩하세요! \n");
-				}//get
+				}
 				else if( !strcmp("q", buf) || !strcmp("Q", buf) ){
 					printf("종료합니다(Q) \n");
 					close(clnt_sock);
 					close(serv_sock);
 					return 0;
 
-				}//q
-				else if( !strcmp("sendrate", buf) ){
-					read(clnt_sock, &vRecv, sizeof(int));
-					BUF_SIZE = vRecv;
-					printf("BUF_SIZE : %d \n", BUF_SIZE);
-				}//sendrate
+				}
 			}//while
 			
 			printf("client disconnected... \n");

@@ -5,7 +5,8 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 
-#define BUF_SIZE 128
+int BUF_SIZE = 128;
+
 void error_handling(char *message);
 //void read_routine(int sock, char *buf);
 void write_routine(int sock, char *buf);//, FILE *fp);
@@ -15,7 +16,7 @@ int main(int argc, char *argv[])
     //FILE *fp;
     int sock;
     pid_t pid;
-    char buf[BUF_SIZE];
+    char buf[1024];
     struct sockaddr_in serv_adr;
     if(argc!=3) {
         printf("Usage : %s <IP> <port>\n", argv[0]);
@@ -40,11 +41,11 @@ int main(int argc, char *argv[])
 
 void write_routine(int sock, char *buf)//, FILE *fp)
 {
-
+    int vSend=0;
     int i, numRead;
     int retcode;
     int totalbytes;//file size
-    char t_msg[129];
+
     char last_msg[129];
 
 
@@ -106,14 +107,14 @@ void write_routine(int sock, char *buf)//, FILE *fp)
                  //send data to server		
 		//write 3 file transfer
 		while(1){
-			numRead = fread(t_msg,1,128,fp);
+			numRead = fread(buf,1,BUF_SIZE,fp);
 			printf("numRead : %d \n", numRead);
-			if(numRead < 128){
-				write(sock, t_msg, numRead);
+			if(numRead < BUF_SIZE){
+				write(sock, buf, numRead);
 				break;
 			}
 			usleep(100);
-			write(sock, t_msg, 128);
+			write(sock, buf, BUF_SIZE);
 		}
 		//shutdown(sock, SHUT_WR);
 		fclose(fp);
@@ -121,7 +122,18 @@ void write_routine(int sock, char *buf)//, FILE *fp)
          }//else if put
 	 else if(!strcmp(buf, "get") ){
 		printf("get부분은 여기에 코딩 \n");
-	 }	
+	 }
+	 else if(!strcmp(buf, "sendrate") ){	
+		scanf("%s", buf);
+		vSend = atoi(buf);
+		printf("%d \n", vSend);
+		BUF_SIZE = vSend;
+		write(sock, &vSend, sizeof(int) );
+
+	 }
+	 else if(!strcmp(buf, "ratecurr") ){
+		printf("send : %dK, recv : \n", BUF_SIZE);
+	 }
 	else{
 		printf("else \n");
 	}
