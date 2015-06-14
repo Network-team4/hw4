@@ -5,7 +5,8 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 
-#define BUF_SIZE 128
+int BUF_SIZE = 128;
+
 void error_handling(char *message);
 //void read_routine(int sock, char *buf);
 void write_routine(int sock, char *buf);//, FILE *fp);
@@ -15,7 +16,7 @@ int main(int argc, char *argv[])
     //FILE *fp;
     int sock;
     pid_t pid;
-    char buf[BUF_SIZE];
+    char buf[1024];
     struct sockaddr_in serv_adr;
     if(argc!=3) {
         printf("Usage : %s <IP> <port>\n", argv[0]);
@@ -40,23 +41,26 @@ int main(int argc, char *argv[])
 
 void write_routine(int sock, char *buf)//, FILE *fp)
 {
-
+    int vSend=0;
     int i, numRead;
     int retcode;
-    int totalbytes;//file size
-    char t_msg[129];
+     int numTotal;
+	int totalbytes,totalbytes_get;//file size
+
     char last_msg[129];
 
 
 	int sumRead = 0;
     while(1)
     {
+	int sumBytes=0;
 	int len = 0;
         char fileName[129];
         int fNameIndex = 0;
 	FILE *fp;
 	printf("while start \n");
 	scanf("%s", buf);
+	int flag[11]={0};
 
 	//write 0 put or get
        	write(sock, buf, strlen(buf)+1);
@@ -69,8 +73,6 @@ void write_routine(int sock, char *buf)//, FILE *fp)
         }//if
         else if(!strcmp(buf, "put") )
         {
-
-
 		scanf("%s", buf);
 		printf("%s \n", buf);
 		
@@ -98,30 +100,110 @@ void write_routine(int sock, char *buf)//, FILE *fp)
            	 //file size
                  fseek(fp,0,SEEK_END);
                  totalbytes = ftell(fp);
-                 printf("[%s](size:%d MB) is being sent \n",fileName,totalbytes);
+                 printf("[%s](size:%d MB) is being sent \n",fileName, totalbytes);
                  
 		//write 2 file_size
                  write(sock, &totalbytes, sizeof(int));
                  rewind(fp);
                  //send data to server		
 		//write 3 file transfer
+		printf("[");
 		while(1){
-			numRead = fread(t_msg,1,128,fp);
-			printf("numRead : %d \n", numRead);
-			if(numRead < 128){
-				write(sock, t_msg, numRead);
+			int percentage;
+			char *tu ="*";
+			char progress[11];
+			
+			numRead = fread(buf,1,BUF_SIZE,fp);
+			//printf("numRead : %d \n", numRead);
+			//프로그래스바
+			sumBytes += numRead;
+			percentage = (float)sumBytes / totalbytes * 100;
+			if(flag[(int)percentage / 10] == 0 && percentage / 10 != 0){
+				printf("%s", tu);
+				//usleep(1000);
+				fflush(stdout);
+				flag[percentage/10] = 1;
+			}
+
+			if(numRead < BUF_SIZE){
+				write(sock, buf, numRead);
 				break;
 			}
 			usleep(100);
-			write(sock, t_msg, 128);
-		}
+			write(sock, buf, BUF_SIZE);
+		}//while
+		printf("]\n");
+		printf("Successfully transferred \n");
 		//shutdown(sock, SHUT_WR);
 		fclose(fp);
 		//close(sock);
          }//else if put
 	 else if(!strcmp(buf, "get") ){
-		printf("get부분은 여기에 코딩 \n");
-	 }	
+		scanf("%s", buf);
+			printf("%s \n", buf);
+
+			//file name
+			for (i = 0; i < strlen(buf); i++){
+				if (buf[i] == '[' || buf[i] == ']')
+					continue;
+				fileName[fNameIndex++] = buf[i];
+			}//for
+
+			fileName[fNameIndex++] = '\0';
+			printf("%s \n", fileName);
+
+			//write 1 file name
+			write(sock, fileName, strlen(fileName) + 1);
+			printf("%s \n", fileName);
+
+			//read 1 file size
+			read(sock, &totalbytes_get, sizeof(int));
+			printf("file size : %d \n", totalbytes_get);
+
+			FILE *pFile = fopen(fileName, "wb");
+			//receiving a TCP packet
+			fp = fopen(fileName, "ab");
+			printf("[");
+			fflush(stdout);
+			do{
+				int percentage;
+				char *tu ="*";
+				char progress[11];
+				numRead = read(sock, buf, 128);
+				sumBytes += numRead;
+				percentage = (float)sumBytes / totalbytes_get * 100;
+				if(flag[(int)percentage / 10] == 0 && percentage / 10 != 0){
+					printf("%s", tu);
+					//usleep(1000);
+					fflush(stdout);
+					flag[percentage/10] = 1;
+				}
+				fwrite((void*)buf, 1, numRead, pFile);
+//				fclose(fp);
+			//	printf("numRead : %d \n", numRead);
+			//	numTotal += numRead;
+			//	printf("numtotal : %d \n", numTotal);
+
+			} while ((numRead == 128) && (numTotal != totalbytes_get));
+			printf("]\n");
+			printf("Successfully transferred \n");
+			fclose(pFile);
+			printf("finish \n");
+	 }
+	 else if(!strcmp(buf, "sendrate") ){	
+		scanf("%s", buf);
+		vSend = atoi(buf);
+		printf("%d \n", vSend);
+		BUF_SIZE = vSend;
+		write(sock, &vSend, sizeof(int) );
+
+	 }
+	 else if(!strcmp(buf, "ratecurr") ){
+		printf("send : %dK, recv : \n", BUF_SIZE);
+	 }
+	 else if(!strcmp(buf, "credit") ){
+
+	 }
 	else{
 		printf("else \n");
 	}

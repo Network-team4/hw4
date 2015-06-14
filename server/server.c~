@@ -7,14 +7,16 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 
-#define BUF_SIZE 30
+
+int BUF_SIZE = 128;
+
 void error_handling(char *message);
 void read_childproc(int sig);
 
 int main(int argc, char *argv[])
 {
-    int totalbytes;//file size
-	char fileName[128];
+        int vRecv=0;
+	char fileName[129];
 	int i;
 	int serv_sock, clnt_sock;
 	struct sockaddr_in serv_adr, clnt_adr;
@@ -70,6 +72,8 @@ int main(int argc, char *argv[])
 			//read 0 put or get
 			while( (str_len = read(clnt_sock, buf, 128)) != 0)
 			{
+				int numTotal=0;
+				int totalbytes,totalbytes_get=0;//file size
 				FILE *fp;
 //				char buf[129];
 				printf("server while start \n");
@@ -95,7 +99,7 @@ int main(int argc, char *argv[])
 					int summ = 0;
 					//read 3 transfer file
 					do{
-						str_len = read(clnt_sock,buf,128);
+						str_len = read(clnt_sock,buf,BUF_SIZE);
 						fwrite((void*)buf, 1, str_len, fp);
 						printf("str_len : %d \n", str_len);
        						//nread = recvfrom(sockid,fileName,512000,0, (struct sockaddr *) &client_addr, (socklen_t*) &addrlen);
@@ -103,7 +107,7 @@ int main(int argc, char *argv[])
 					        numTotal += str_len;
 					        // printf("nread : %d \n",nread);
 					         printf("numtotal : %d \n",numTotal);
-					}while((str_len == 128) && (numTotal != totalbytes));
+					}while((str_len == BUF_SIZE) && (numTotal != totalbytes));
 
 					/*
 					while( (str_len = read(clnt_sock, buf, 128)) != 0 ){
@@ -116,17 +120,61 @@ int main(int argc, char *argv[])
 					printf("finish \n");
 					//scanf("%s \n", buf);
 					//close(clnt_sock);
-				}//if
+				}//put
 				else if( !strcmp("get", buf) ){
-					printf("get은 여기다 코딩하세요! \n");
-				}
+					//read 1 fileName
+					str_len = read(clnt_sock, buf, 128);
+					for (i = 0; i < str_len; i++){
+						fileName[i] = buf[i];
+					}
+					fileName[str_len] = '\0';
+					printf("%s \n", fileName);
+					
+					//file I/O
+					fp = fopen(fileName, "rb");
+					if (fp == NULL){
+						printf("no file \n");
+						continue;
+					}
+
+					//file size
+					fseek(fp, 0, SEEK_END);
+					totalbytes_get = ftell(fp);
+					printf("[%s](size:%d MB) is being received \n", fileName, totalbytes_get);
+
+					//write 1 file_size
+					write(clnt_sock, &totalbytes_get, sizeof(int));
+					rewind(fp);
+					//send data to client		
+					//write 2 file transfer
+
+					while (1){
+						str_len = fread(buf_get, 1, 128, fp);
+						printf("numRead : %d \n", str_len);
+						if (str_len < 128){
+							write(clnt_sock, buf_get, str_len);
+							break;
+						}
+						usleep(100);
+						write(clnt_sock, buf_get, 128);
+					}
+					//shutdown(sock, SHUT_WR);
+					fclose(fp);
+					printf("finish\n");
+					//close(sock);
+				}//get
 				else if( !strcmp("q", buf) || !strcmp("Q", buf) ){
 					printf("종료합니다(Q) \n");
 					close(clnt_sock);
 					close(serv_sock);
 					return 0;
 
-				}
+				}//q
+				else if( !strcmp("sendrate", buf) ){
+					read(clnt_sock, &vRecv, sizeof(int));
+					BUF_SIZE = vRecv;
+					printf("BUF_SIZE : %d \n", BUF_SIZE);
+				}//sendrate
 			}//while
 			
 			printf("client disconnected... \n");

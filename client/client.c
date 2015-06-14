@@ -53,12 +53,14 @@ void write_routine(int sock, char *buf)//, FILE *fp)
 	int sumRead = 0;
     while(1)
     {
+	int sumBytes=0;
 	int len = 0;
         char fileName[129];
         int fNameIndex = 0;
 	FILE *fp;
 	printf("while start \n");
 	scanf("%s", buf);
+	int flag[11]={0};
 
 	//write 0 put or get
        	write(sock, buf, strlen(buf)+1);
@@ -71,8 +73,6 @@ void write_routine(int sock, char *buf)//, FILE *fp)
         }//if
         else if(!strcmp(buf, "put") )
         {
-
-
 		scanf("%s", buf);
 		printf("%s \n", buf);
 		
@@ -100,23 +100,40 @@ void write_routine(int sock, char *buf)//, FILE *fp)
            	 //file size
                  fseek(fp,0,SEEK_END);
                  totalbytes = ftell(fp);
-                 printf("[%s](size:%d MB) is being sent \n",fileName,totalbytes);
+                 printf("[%s](size:%d MB) is being sent \n",fileName, totalbytes);
                  
 		//write 2 file_size
                  write(sock, &totalbytes, sizeof(int));
                  rewind(fp);
                  //send data to server		
 		//write 3 file transfer
+		printf("[");
 		while(1){
+			int percentage;
+			char *tu ="*";
+			char progress[11];
+			
 			numRead = fread(buf,1,BUF_SIZE,fp);
-			printf("numRead : %d \n", numRead);
+			//printf("numRead : %d \n", numRead);
+			//프로그래스바
+			sumBytes += numRead;
+			percentage = (float)sumBytes / totalbytes * 100;
+			if(flag[(int)percentage / 10] == 0 && percentage / 10 != 0){
+				printf("%s", tu);
+				//usleep(1000);
+				fflush(stdout);
+				flag[percentage/10] = 1;
+			}
+
 			if(numRead < BUF_SIZE){
 				write(sock, buf, numRead);
 				break;
 			}
 			usleep(100);
 			write(sock, buf, BUF_SIZE);
-		}
+		}//while
+		printf("]\n");
+		printf("Successfully transferred \n");
 		//shutdown(sock, SHUT_WR);
 		fclose(fp);
 		//close(sock);
@@ -146,17 +163,30 @@ void write_routine(int sock, char *buf)//, FILE *fp)
 			FILE *pFile = fopen(fileName, "wb");
 			//receiving a TCP packet
 			fp = fopen(fileName, "ab");
+			printf("[");
+			fflush(stdout);
 			do{
+				int percentage;
+				char *tu ="*";
+				char progress[11];
 				numRead = read(sock, buf, 128);
-
+				sumBytes += numRead;
+				percentage = (float)sumBytes / totalbytes_get * 100;
+				if(flag[(int)percentage / 10] == 0 && percentage / 10 != 0){
+					printf("%s", tu);
+					//usleep(1000);
+					fflush(stdout);
+					flag[percentage/10] = 1;
+				}
 				fwrite((void*)buf, 1, numRead, pFile);
 //				fclose(fp);
-				printf("numRead : %d \n", numRead);
-				numTotal += numRead;
-				printf("numtotal : %d \n", numTotal);
+			//	printf("numRead : %d \n", numRead);
+			//	numTotal += numRead;
+			//	printf("numtotal : %d \n", numTotal);
 
 			} while ((numRead == 128) && (numTotal != totalbytes_get));
-			
+			printf("]\n");
+			printf("Successfully transferred \n");
 			fclose(pFile);
 			printf("finish \n");
 	 }
@@ -168,8 +198,14 @@ void write_routine(int sock, char *buf)//, FILE *fp)
 		write(sock, &vSend, sizeof(int) );
 
 	 }
+	 else if(!strcmp(buf, "sendrate") ){	
+
+	 }
 	 else if(!strcmp(buf, "ratecurr") ){
 		printf("send : %dK, recv : \n", BUF_SIZE);
+	 }
+	 else if(!strcmp(buf, "credit") ){
+
 	 }
 	else{
 		printf("else \n");
