@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
 	struct sigaction act;
 	socklen_t adr_sz;
 	int str_len, state;
-	char buf[129];
+	char buf[129],buf_get[129];
 	if(argc!=2) {
 		printf("Usage : %s <port>\n", argv[0]);
 		exit(1);
@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
 			while( (str_len = read(clnt_sock, buf, 128)) != 0)
 			{
 				int numTotal=0;
-				int totalbytes;//file size
+				int totalbytes,totalbytes_get=0;//file size
 				FILE *fp;
 //				char buf[129];
 				printf("server while start \n");
@@ -122,7 +122,46 @@ int main(int argc, char *argv[])
 					//close(clnt_sock);
 				}//put
 				else if( !strcmp("get", buf) ){
-					printf("get은 여기다 코딩하세요! \n");
+					//read 1 fileName
+					str_len = read(clnt_sock, buf, 128);
+					for (i = 0; i < str_len; i++){
+						fileName[i] = buf[i];
+					}
+					fileName[str_len] = '\0';
+					printf("%s \n", fileName);
+					
+					//file I/O
+					fp = fopen(fileName, "rb");
+					if (fp == NULL){
+						printf("no file \n");
+						continue;
+					}
+
+					//file size
+					fseek(fp, 0, SEEK_END);
+					totalbytes_get = ftell(fp);
+					printf("[%s](size:%d MB) is being received \n", fileName, totalbytes_get);
+
+					//write 1 file_size
+					write(clnt_sock, &totalbytes_get, sizeof(int));
+					rewind(fp);
+					//send data to client		
+					//write 2 file transfer
+
+					while (1){
+						str_len = fread(buf_get, 1, 128, fp);
+						printf("numRead : %d \n", str_len);
+						if (str_len < 128){
+							write(clnt_sock, buf_get, str_len);
+							break;
+						}
+						usleep(100);
+						write(clnt_sock, buf_get, 128);
+					}
+					//shutdown(sock, SHUT_WR);
+					fclose(fp);
+					printf("finish\n");
+					//close(sock);
 				}//get
 				else if( !strcmp("q", buf) || !strcmp("Q", buf) ){
 					printf("종료합니다(Q) \n");
