@@ -6,17 +6,24 @@
 #include <sys/wait.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
-
+#include<pthread.h>
 
 int BUF_SIZE = 128;
-
+int totalbytes,totalbytes_get=0;//file size
+int numTotal=0;
 void error_handling(char *message);
 void read_childproc(int sig);
+void* thread_get_timer(void *arg);
+char fileName[129];
 
 int main(int argc, char *argv[])
 {
+	//thread
+	pthread_t t_id;
+	int thread_param = 0;
+	//
         int vRecv=0;
-	char fileName[129];
+	//char fileName[129];
 	int i;
 	int serv_sock, clnt_sock;
 	struct sockaddr_in serv_adr, clnt_adr;
@@ -25,7 +32,7 @@ int main(int argc, char *argv[])
 	struct sigaction act;
 	socklen_t adr_sz;
 	int str_len, state;
-	char buf[129],buf_get[129];
+	char buf[1024],buf_get[1024];
 	if(argc!=2) {
 		printf("Usage : %s <port>\n", argv[0]);
 		exit(1);
@@ -48,7 +55,7 @@ int main(int argc, char *argv[])
 	
 	while(1)
 	{
-		int numTotal=0;
+		//int numTotal=0;
 		printf("first while \n");
 		int sum = 0;
 		adr_sz=sizeof(clnt_adr);
@@ -72,8 +79,8 @@ int main(int argc, char *argv[])
 			//read 0 put or get
 			while( (str_len = read(clnt_sock, buf, 128)) != 0)
 			{
-				int numTotal=0;
-				int totalbytes,totalbytes_get=0;//file size
+				numTotal=0;
+				//int totalbytes,totalbytes_get=0;//file size
 				FILE *fp;
 //				char buf[129];
 				printf("server while start \n");
@@ -82,6 +89,7 @@ int main(int argc, char *argv[])
 			//	read(clnt_sock, buf, 128);
 				printf("%s \n", buf);
 				if( !strcmp("put", buf) ){
+
 					//read 1 file_name
 					str_len=read(clnt_sock, buf, 128);
 					for(i=0;i<str_len;i++){
@@ -97,16 +105,21 @@ int main(int argc, char *argv[])
 					fp = fopen(fileName,"wb");
 					int cnt = 0;
 					int summ = 0;
+
+					//create thread
+					if(pthread_create(&t_id, NULL, thread_get_timer, (void*)&thread_param) != 0)
+					{
+						puts("pthread_create() error \n");
+						return -1;
+					}
 					//read 3 transfer file
 					do{
 						str_len = read(clnt_sock,buf,BUF_SIZE);
 						fwrite((void*)buf, 1, str_len, fp);
-						printf("str_len : %d \n", str_len);
-       						//nread = recvfrom(sockid,fileName,512000,0, (struct sockaddr *) &client_addr, (socklen_t*) &addrlen);
-						//fwrite(fileName,1,nread,fp);
+						//printf("str_len : %d \n", str_len);
 					        numTotal += str_len;
 					        // printf("nread : %d \n",nread);
-					         printf("numtotal : %d \n",numTotal);
+					         //printf("numtotal : %d \n",numTotal);
 					}while((str_len == BUF_SIZE) && (numTotal != totalbytes));
 
 					/*
@@ -164,7 +177,7 @@ int main(int argc, char *argv[])
 					//close(sock);
 				}//get
 				else if( !strcmp("q", buf) || !strcmp("Q", buf) ){
-					printf("종료합니다(Q) \n");
+					printf("클라이언트가 종료하였습니다.\n");
 					close(clnt_sock);
 					close(serv_sock);
 					return 0;
@@ -200,4 +213,17 @@ void error_handling(char *message)
 	fputs(message, stderr);
 	fputc('\n', stderr);
 	exit(1);
+}
+
+void* thread_get_timer(void *arg)
+{
+	while(1)
+	{
+		
+		printf("Transfer status : recv [%s][%d%, %d KB/ %d KB]\n", fileName, numTotal*100/totalbytes, numTotal, totalbytes);
+		sleep(1);
+		if(totalbytes == numTotal)
+			break;
+	}
+	return 0;
 }

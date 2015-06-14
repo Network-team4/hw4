@@ -198,6 +198,9 @@ void write_routine(int sock, char *buf)//, FILE *fp)
 		write(sock, &vSend, sizeof(int) );
 
 	 }
+	 else if(!strcmp(buf, "sendrate") ){	
+
+	 }
 	 else if(!strcmp(buf, "ratecurr") ){
 		printf("send : %dK, recv : \n", BUF_SIZE);
 	 }

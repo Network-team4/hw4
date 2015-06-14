@@ -59,10 +59,11 @@ void write_routine(int sock, char *buf)//, FILE *fp)
         int fNameIndex = 0;
 	FILE *fp;
 	printf("while start \n");
+	printf(">파일보내기(put)\n>파일받기(get)\n>파일전송비율(sendrate)\n>파일수신비율(recvrate)\n>파일송수신비율보기(ratecurr)\n>(credit)\n>종료(q or Q)\n");
 	scanf("%s", buf);
 	int flag[11]={0};
 
-	//write 0 put or get
+	//write 0 put or getnnn
        	write(sock, buf, strlen(buf)+1);
 
 	//printf("%d \n", buf);
@@ -73,6 +74,7 @@ void write_routine(int sock, char *buf)//, FILE *fp)
         }//if
         else if(!strcmp(buf, "put") )
         {
+		printf("보낼 파일명을 입력하세요\n 예시 : [파일명.파일형식]\n");
 		scanf("%s", buf);
 		printf("%s \n", buf);
 		
@@ -129,7 +131,7 @@ void write_routine(int sock, char *buf)//, FILE *fp)
 				write(sock, buf, numRead);
 				break;
 			}
-			usleep(100);
+			usleep(1000);
 			write(sock, buf, BUF_SIZE);
 		}//while
 		printf("]\n");
@@ -139,6 +141,7 @@ void write_routine(int sock, char *buf)//, FILE *fp)
 		//close(sock);
          }//else if put
 	 else if(!strcmp(buf, "get") ){
+		printf("받은 파일명을 입력하세요\n 예시 : [파일명.파일형식]\n");
 		scanf("%s", buf);
 			printf("%s \n", buf);
 
@@ -198,14 +201,28 @@ void write_routine(int sock, char *buf)//, FILE *fp)
 		write(sock, &vSend, sizeof(int) );
 
 	 }
-	 else if(!strcmp(buf, "sendrate") ){	
-
-	 }
 	 else if(!strcmp(buf, "ratecurr") ){
 		printf("send : %dK, recv : \n", BUF_SIZE);
 	 }
 	 else if(!strcmp(buf, "credit") ){
 
+		while(1)
+		{
+			int stdID;
+			printf("학번 입력(종료(0)) : ");
+			scanf("%d",&stdID);
+			if(stdID == 20115233){
+				printf("20115233 김학균\n");
+				printf("<-- client.c --> \n");
+				printf("1. 멀티프로세스를 이용한 서버 다중접속이 가능하도록 밑바탕 구현 \n");
+				printf("2. 파일을 전송하는 put부분 전체 구현 \n");
+				printf("3. sendrate, 종료(Q), ratecurr 그리고 credit 등을 구현하였습니다.\n"); 
+				printf("<-- server.c --> \n");
+				printf("1. 멀티프로세스 방식으로 여러 클라이언트가 하나의 서버에 접속 가능하도록 밑바탕 구현 \n");
+				printf("2. put, sendrate, Q 그리고 1초마다 얼만큼 클라이언트로부터 파일을 전송받고 있는지를 나타내는 것을 쓰레드로 구현 				thread_get_timer함수\n");
+			}
+			else if(stdID == 0) break;
+		}
 	 }
 	else{
 		printf("else \n");
