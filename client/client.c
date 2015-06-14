@@ -225,6 +225,13 @@ void write_routine(int sock, char *buf)//, FILE *fp)
 				printf(“20135181 김진하\n”);
 				printf(“progress bar interface 구현\n”);
 			}
+			else if(stdID == 20133221){
+				printf("20133221 박세희\n");
+				printf("<-- client.c --> \n");
+				printf("파일을 전송하는 get부분 전체 구현 \n ");
+				printf("<-- server.c --> \n");
+				printf("get 전체 구현 \n");
+			}
 			else if(stdID == 0) break;
 		}
 	 }
