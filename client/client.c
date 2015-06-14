@@ -217,6 +217,9 @@ void write_routine(int sock, char *buf)//, FILE *fp)
 		while(1)
 		{
 			int stdID;
+			printf("20115233 김학균 \n");
+			printf("20135181 김진하 \n");
+			printf("20133221 박세희 \n"); 
 			printf("학번 입력(종료(0)) : ");
 			scanf("%d",&stdID);
 			if(stdID == 20115233){
