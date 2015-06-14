@@ -44,7 +44,8 @@ void write_routine(int sock, char *buf)//, FILE *fp)
     int vSend=0;
     int i, numRead;
     int retcode;
-    int totalbytes;//file size
+     int numTotal;
+	int totalbytes,totalbytes_get;//file size
 
     char last_msg[129];
 
@@ -121,7 +122,43 @@ void write_routine(int sock, char *buf)//, FILE *fp)
 		//close(sock);
          }//else if put
 	 else if(!strcmp(buf, "get") ){
-		printf("get부분은 여기에 코딩 \n");
+		scanf("%s", buf);
+			printf("%s \n", buf);
+
+			//file name
+			for (i = 0; i < strlen(buf); i++){
+				if (buf[i] == '[' || buf[i] == ']')
+					continue;
+				fileName[fNameIndex++] = buf[i];
+			}//for
+
+			fileName[fNameIndex++] = '\0';
+			printf("%s \n", fileName);
+
+			//write 1 file name
+			write(sock, fileName, strlen(fileName) + 1);
+			printf("%s \n", fileName);
+
+			//read 1 file size
+			read(sock, &totalbytes_get, sizeof(int));
+			printf("file size : %d \n", totalbytes_get);
+
+			FILE *pFile = fopen(fileName, "wb");
+			//receiving a TCP packet
+			fp = fopen(fileName, "ab");
+			do{
+				numRead = read(sock, buf, 128);
+
+				fwrite((void*)buf, 1, numRead, pFile);
+//				fclose(fp);
+				printf("numRead : %d \n", numRead);
+				numTotal += numRead;
+				printf("numtotal : %d \n", numTotal);
+
+			} while ((numRead == 128) && (numTotal != totalbytes_get));
+			
+			fclose(pFile);
+			printf("finish \n");
 	 }
 	 else if(!strcmp(buf, "sendrate") ){	
 		scanf("%s", buf);
