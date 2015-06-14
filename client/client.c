@@ -221,6 +221,13 @@ void write_routine(int sock, char *buf)//, FILE *fp)
 				printf("1. 멀티프로세스 방식으로 여러 클라이언트가 하나의 서버에 접속 가능하도록 밑바탕 구현 \n");
 				printf("2. put, sendrate, Q 그리고 1초마다 얼만큼 클라이언트로부터 파일을 전송받고 있는지를 나타내는 것을 쓰레드로 구현 				thread_get_timer함수\n");
 			}
+			else if(stdID == 20133221){
+				printf("20133221 박세희\n");
+				printf("<-- client.c --> \n");
+				printf("파일을 전송하는 get부분 전체 구현 \n ");
+				printf("<-- server.c --> \n");
+				printf("get 전체 구현 \n");
+			}
 			else if(stdID == 0) break;
 		}
 	 }
