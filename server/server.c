@@ -9,10 +9,12 @@
 #include<pthread.h>
 
 int BUF_SIZE = 128;
+int R_BUF_SIZE = 128;
 int totalbytes,totalbytes_get=0;//file size
-int numTotal=0;
+int numTotal=0, numTotal_get=0;
 void error_handling(char *message);
 void read_childproc(int sig);
+void* thread_put_timer(void *arg);
 void* thread_get_timer(void *arg);
 char fileName[129];
 
@@ -23,6 +25,7 @@ int main(int argc, char *argv[])
 	int thread_param = 0;
 	//
         int vRecv=0;
+	int vSend = 0;
 	//char fileName[129];
 	int i;
 	int serv_sock, clnt_sock;
@@ -107,7 +110,7 @@ int main(int argc, char *argv[])
 					int summ = 0;
 
 					//create thread
-					if(pthread_create(&t_id, NULL, thread_get_timer, (void*)&thread_param) != 0)
+					if(pthread_create(&t_id, NULL, thread_put_timer, (void*)&thread_param) != 0)
 					{
 						puts("pthread_create() error \n");
 						return -1;
@@ -135,6 +138,8 @@ int main(int argc, char *argv[])
 					//close(clnt_sock);
 				}//put
 				else if( !strcmp("get", buf) ){
+					totalbytes_get = 0;
+					numTotal_get=0;
 					//read 1 fileName
 					str_len = read(clnt_sock, buf, 128);
 					for (i = 0; i < str_len; i++){
@@ -160,16 +165,23 @@ int main(int argc, char *argv[])
 					rewind(fp);
 					//send data to client		
 					//write 2 file transfer
+					//create thread
+					if(pthread_create(&t_id, NULL, thread_get_timer, (void*)&thread_param) != 0)
+					{
+						puts("pthread_create() error \n");
+						return -1;
+					}
 
 					while (1){
-						str_len = fread(buf_get, 1, 128, fp);
-						printf("numRead : %d \n", str_len);
-						if (str_len < 128){
+						str_len = fread(buf_get, 1, R_BUF_SIZE, fp);
+						//printf("numRead : %d \n", str_len);
+						numTotal_get += str_len;
+						if (str_len < R_BUF_SIZE){
 							write(clnt_sock, buf_get, str_len);
 							break;
 						}
-						usleep(100);
-						write(clnt_sock, buf_get, 128);
+						usleep(1000);
+						write(clnt_sock, buf_get, str_len);
 					}
 					//shutdown(sock, SHUT_WR);
 					fclose(fp);
@@ -188,6 +200,14 @@ int main(int argc, char *argv[])
 					BUF_SIZE = vRecv;
 					printf("BUF_SIZE : %d \n", BUF_SIZE);
 				}//sendrate
+				else if( !strcmp("recvrate", buf) ){
+					read(clnt_sock, &vSend, sizeof(int));
+					printf("vSend : %d\n", vSend);
+					R_BUF_SIZE = vSend;
+					printf("R_BUF_SIZE : %d \n", R_BUF_SIZE);
+					
+
+				}
 			}//while
 			
 			printf("client disconnected... \n");
@@ -215,7 +235,7 @@ void error_handling(char *message)
 	exit(1);
 }
 
-void* thread_get_timer(void *arg)
+void* thread_put_timer(void *arg)
 {
 	while(1)
 	{
@@ -223,6 +243,19 @@ void* thread_get_timer(void *arg)
 		printf("Transfer status : recv [%s][%d%, %d KB/ %d KB]\n", fileName, numTotal*100/totalbytes, numTotal, totalbytes);
 		sleep(1);
 		if(totalbytes == numTotal)
+			break;
+	}
+	return 0;
+}
+
+void* thread_get_timer(void *arg)
+{
+	while(1)
+	{
+		
+		printf("Transfer status : send [%s][%d%, %d KB/ %d KB]\n", fileName, numTotal_get*100/totalbytes_get, numTotal_get, totalbytes_get);
+		sleep(1);
+		if(totalbytes_get == numTotal_get)
 			break;
 	}
 	return 0;
